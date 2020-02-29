@@ -9,22 +9,14 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## R Markdown
+## About the Project
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+[Congress Money](https://github.com/andyzwang/congressmoney) is a project to examine the links between federal political candidate fund-raising and subsequent performance in the actual elections. There's many possible questions that I'd like to answer. Do candidates who receive more small-dollar donors tend to do better in elections? How large is the actual impact of fund-raising on performance? I think that these are all answers with current relevance in our political system, and being able to have some hard data to support our philosophical and moral debates about money in the political atmosphere is very important. 
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+I have cleaned up my data, but I haven't processed it very far as I want to think mindfully first about how I'd like to use the data provided, which then affects which tables I'd join together and how I process it.
 
-```{r cars}
-summary(cars)
-```
+## Data Sources
 
-## Including Plots
+[The FEC's election data](https://www.fec.gov/data/browse-data/) provides information about all of the contributions of individuals, the fund-raising data of candidates, and much more. I'll be primarily looking at the 2015-2016 election cycles, though an option is also to look at the difference between elections. 
 
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
-```
-
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+[MIT Election Lab's data](https://electionlab.mit.edu/data) provides election results on the precinct and district level for candidates, both in the general and in the primary elections, from the years of 1976-2018. 

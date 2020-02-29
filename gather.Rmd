@@ -7,6 +7,7 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+library(readr)
 library(tidyverse)
 ```
 
@@ -16,5 +17,8 @@ x
 ```
 
 ```{r fundraisingdata}
-
+X16_candidates <- read_delim("16_candidates.txt", 
+                             "|", escape_double = FALSE, col_names = TRUE, 
+                             trim_ws = TRUE)
+View(X16_candidates)
 ```

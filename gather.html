@@ -21428,6 +21428,44 @@ x</code></pre>
 ## 5262     136741      FALSE 20171005
 ## 5263     136741      FALSE 20171005
 ##  [ reached &#39;max&#39; / getOption(&quot;max.print&quot;) -- omitted 24373 rows ]</code></pre>
+<pre class="r"><code>X16_candidates &lt;- read_delim(&quot;16_candidates.txt&quot;, 
+                             &quot;|&quot;, escape_double = FALSE, col_names = FALSE, 
+                             trim_ws = TRUE)</code></pre>
+<pre><code>## Parsed with column specification:
+## cols(
+##   .default = col_double(),
+##   X1 = col_character(),
+##   X2 = col_character(),
+##   X3 = col_character(),
+##   X5 = col_character(),
+##   X19 = col_character(),
+##   X20 = col_character(),
+##   X21 = col_logical(),
+##   X22 = col_logical(),
+##   X23 = col_logical(),
+##   X24 = col_logical(),
+##   X25 = col_logical(),
+##   X28 = col_character()
+## )</code></pre>
+<pre><code>## See spec(...) for full column specifications.</code></pre>
+<pre class="r"><code>X16_candidates</code></pre>
+<pre><code>## # A tibble: 2,906 x 30
+##    X1    X2    X3       X4 X5        X6    X7     X8    X9    X10    X11   X12
+##    &lt;chr&gt; &lt;chr&gt; &lt;chr&gt; &lt;dbl&gt; &lt;chr&gt;  &lt;dbl&gt; &lt;dbl&gt;  &lt;dbl&gt; &lt;dbl&gt;  &lt;dbl&gt;  &lt;dbl&gt; &lt;dbl&gt;
+##  1 H4AK… DUNB… C         1 DEM   5.50e2     0 7.56e3     0 7.37e3 3.54e2     0
+##  2 H0AK… COX,… C         2 REP   0.         0 0.         0 0.     0.         0
+##  3 H6AK… YOUN… I         2 REP   1.10e6     0 1.32e6     0 4.88e5 2.70e5     0
+##  4 H8AK… LEDO… C         2 REP   0.         0 0.         0 4.79e2 4.79e2     0
+##  5 H6AK… LIND… &lt;NA&gt;      1 DEM   1.10e6     0 1.10e6     0 0.     4.21e3 17555
+##  6 H4AL… BYRN… I         2 REP   1.37e6 33152 1.17e6     0 2.52e5 4.46e5     0
+##  7 H4AL… FINC… C         2 REP   0.         0 0.         0 1.90e3 1.90e3     0
+##  8 H6AL… YOUN… C         2 REP   1.79e5     0 1.78e5     0 0.     0.         0
+##  9 H6AL… MATH… C         1 DEM   3.68e4     0 3.68e4     0 0.     0.         0
+## 10 H0AL… ROBY… I         2 REP   1.40e6     0 1.85e6     0 4.92e5 4.55e4     0
+## # … with 2,896 more rows, and 18 more variables: X13 &lt;dbl&gt;, X14 &lt;dbl&gt;,
+## #   X15 &lt;dbl&gt;, X16 &lt;dbl&gt;, X17 &lt;dbl&gt;, X18 &lt;dbl&gt;, X19 &lt;chr&gt;, X20 &lt;chr&gt;,
+## #   X21 &lt;lgl&gt;, X22 &lt;lgl&gt;, X23 &lt;lgl&gt;, X24 &lt;lgl&gt;, X25 &lt;lgl&gt;, X26 &lt;dbl&gt;,
+## #   X27 &lt;dbl&gt;, X28 &lt;chr&gt;, X29 &lt;dbl&gt;, X30 &lt;dbl&gt;</code></pre>
 
 
 

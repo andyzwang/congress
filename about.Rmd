@@ -1,5 +1,5 @@
 ---
-title: "About"
+title: "About Congre$$"
 author: "Andy Wang"
 date: "2/28/2020"
 output: html_document
@@ -11,7 +11,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## About the Project
 
-[Congress Money](https://github.com/andyzwang/congressmoney) is a project to examine the links between federal political candidate fund-raising and subsequent performance in the actual elections. There's many possible questions that I'd like to answer. Do candidates who receive more small-dollar donors tend to do better in elections? How large is the actual impact of fund-raising on performance? I think that these are all answers with current relevance in our political system, and being able to have some hard data to support our philosophical and moral debates about money in the political atmosphere is very important. 
+[Congre$$](https://github.com/andyzwang/congressmoney) is a project to examine the links between federal political candidate fund-raising and subsequent performance in the actual elections. There's many possible questions that I'd like to answer. Do candidates who receive more small-dollar donors tend to do better in elections? How large is the actual impact of fund-raising on performance? I think that these are all answers with current relevance in our political system, and being able to have some hard data to support our philosophical and moral debates about money in the political atmosphere is very important. 
 
 I have cleaned up my data, but I haven't processed it very far as I want to think mindfully first about how I'd like to use the data provided, which then affects which tables I'd join together and how I process it.
 

@@ -1,5 +1,5 @@
 ---
-title: "Gather"
+title: "Data Gathering"
 author: "Andy Wang"
 date: "2/28/2020"
 output: html_document
@@ -9,16 +9,46 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 library(readr)
 library(tidyverse)
+library(janitor)
 ```
 
-```{r electiondata}
+## Elections Data
+
+I took data from [MIT Election Lab's data](https://electionlab.mit.edu/data), which has information on all of the house elections in every single year. 
+```{r electiondata, include = TRUE, echo = FALSE}
 load("house_elections.RData")
-x
+
+x <- x %>%
+  clean_names() %>%
+  filter(candidate != "NA") 
+
+glimpse(x)
 ```
 
-```{r fundraisingdata}
+## Elections Data
+
+I also took data from the [FEC's election data](https://www.fec.gov/data/browse-data/)  about the 2015-2016 Congresional candidates, which I cleaned up a bit and added a mutated row of the party names. This data has all of the fundraising sources and expenditures for each campaign
+```{r fundraisingdata, include = TRUE, echo = FALSE, warning = FALSE, message = FALSE}
 X16_candidates <- read_delim("16_candidates.txt", 
                              "|", escape_double = FALSE, col_names = TRUE, 
-                             trim_ws = TRUE)
-View(X16_candidates)
+                             trim_ws = TRUE) %>%
+  mutate(CAND_OFFICE_DISTRICT = as.integer(CAND_OFFICE_DISTRICT)) %>%
+  clean_names() %>%
+  mutate(cand_name = str_to_title(cand_name))  %>%
+  filter(cand_pty_affiliation %in% c("DEM", "REP")) %>%
+  mutate(party = ifelse(cand_pty_affiliation == "DEM", "democrat", "republican"))
+glimpse(X16_candidates)
+```
+## Joining the Data
+
+I'm currently working on joining the data of the two tables. I've already filtered to only have the Democrat and the Republican, and I've constrained the taible to only have the year 2016. However, the current snag that I have is that the FEC data has information about ALL candidates, while the Elections Lab data only has the candidate in the general. I currently am joining across party, state, and district, which DOES join correctly the correct candidates, but also unfortunately brings in candidates that we do not need. Trying to fix this next week will be my primary goal, because then I'll have a comprehensive table, and I can actually just set a function to reproduce this with any election year I want to as well. I think that I ultimately have to do something with the names, but this will prove to be difficult since one is (Suffix Last, First) and the other table has (First Last Suffix). That way, I can start running data analysis within each year, as well as across time periods.
+
+```{r joineddata, include = TRUE, echo = FALSE, warning = FALSE, message = FALSE}
+joined_data <- x %>%
+  filter(year == 2016) %>%
+  filter(party %in% c("democrat", "republican"))  %>%
+  mutate(district = as.integer(district)) %>%
+  left_join(X16_candidates, by = c( "party" = "party", "state_po" = "cand_office_st", "district" = "cand_office_district"))
+
+glimpse(joined_data)
 ```

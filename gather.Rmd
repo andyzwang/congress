@@ -74,7 +74,7 @@ My github with the data can be found at [Congre$$](https://github.com/andyzwang/
 ## Elections Data
 
 I took data from [MIT Election Lab's data](https://electionlab.mit.edu/data), which has information on all of the house elections in every single year. 
-```{r electiondata, include = TRUE, echo = FALSE}
+```{r electiondata}
 
 # loading in the file downloaded from the internet
 
@@ -126,30 +126,89 @@ mit_2016[307, "candidate_last"] <- "Gutierrez"
 
 ## Elections Data
 
-I also took data from the [FEC's election data](https://www.fec.gov/data/browse-data/)  about the 2015-2016 Congresional candidates, which I cleaned up a bit and added a mutated row of the party names. This data has all of the fundraising sources and expenditures for each campaign.
-```{r fundraisingdata, include = TRUE, echo = FALSE}
-x16_candidates <- read_delim("16_candidates.txt", 
-                             "|", escape_double = FALSE, col_names = TRUE, 
-                             trim_ws = TRUE) %>%
+I also took data from the [FEC's election data](https://www.fec.gov/data/browse-data/)  about the 2015-2016 Congressional candidates, which I cleaned up a bit and added a mutated row of the party names. This data has all of the fundraising sources and expenditures for each campaign.
+```{r fundraisingdata, message = FALSE}
+
+# reading in the file, using column names. then cleaning up (i.e. setting party
+# affiliation to full names for better compatibility with the other table,
+# setting names to title case instead of all caps, and then setting a column for
+# the last name)
+
+fec_16 <- read_delim("16_candidates.txt",
+  "|",
+  escape_double = FALSE, col_names = TRUE,
+  trim_ws = TRUE
+) %>%
   mutate(CAND_OFFICE_DISTRICT = as.integer(CAND_OFFICE_DISTRICT)) %>%
   clean_names() %>%
-  mutate(cand_name = str_to_title(cand_name))  %>%
+  mutate(cand_name = str_to_title(cand_name)) %>%
   filter(cand_pty_affiliation %in% c("DEM", "REP")) %>%
-  mutate(party = ifelse(cand_pty_affiliation == "DEM", "democrat", "republican")) %>%
+  mutate(party = ifelse(cand_pty_affiliation == "DEM",
+    "democrat",
+    "republican"
+  )) %>%
   select(-cand_pty_affiliation) %>%
+  select(
+    -spec_election, -prim_election,
+    -run_election, -gen_election, -gen_election_percent
+  ) %>%
   mutate(cand_name = removePunctuation(cand_name)) %>%
   mutate("candidate_last" = gsub("([A-Za-z]+).*", "\\1", cand_name))
   
-
 ```
 ## Joining the Data
 
-I'm currently working on joining the data of the two tables. I've already filtered to only have the Democrat and the Republican, and I've constrained the table to only have the year 2016. However, the current snag that I have is that the FEC data has information about ALL candidates, while the Elections Lab data only has the candidate in the general. I currently am joining across party, state, and district, which DOES join correctly the correct candidates, but also unfortunately brings in candidates that we do not need. Trying to fix this next week will be my primary goal, because then I'll have a comprehensive table, and I can actually just set a function to reproduce this with any election year I want to as well. I think that I ultimately have to do something with the names, but this will prove to be difficult since one is (Suffix Last, First) and the other table has (First Last Suffix). That way, I can start running data analysis within each year, as well as across time periods.
+I've joined the data together for the 2016 election cycle. Although it was a technical challenge, now I am able to actually manipulate the data and see how electoral and financial data work together. I must also note that not all candidates filed with the FEC, or the FEC doesn't have their data available, meaning many districts only have some data available. 
 
-```{r joineddata, include = TRUE, echo = FALSE, warning = FALSE, message = FALSE}
+I'm currently working on joining the data of the two tables. I've constrained the table to only have the year 2016. However, the current snag that I have is that the FEC data has information about ALL candidates, while the Elections Lab data only has the candidate in the general. I currently am joining across party, state, and district, which DOES join correctly the correct candidates, but also unfortunately brings in candidates that we do not need. Trying to fix this next week will be my primary goal, because then I'll have a comprehensive table, and I can actually just set a function to reproduce this with any election year I want to as well. I think that I ultimately have to do something with the names, but this will prove to be difficult since one is (Suffix Last, First) and the other table has (First Last Suffix). That way, I can start running data analysis within each year, as well as across time periods.
+
+```{r joineddata}
+
+# Joining the data was honestly very difficult for me. I was able to figure out
+# how to set, for example, the districts equal to each other and the states
+# equal to each other at first. However, just joining by district, state, and
+# party would give me incorrect merging, since the FEC data also had primary
+# challengers, each of which would be merged into the general nominee's slot. I
+# then tried to merge by name, but the FEC data was in the format of Last, First
+# Middle, while the MIT data was in the form of First Middle Last Suffix. I
+# tried using fuzzy merging, but I couldn't strike a balance between being too
+# lenient and it not catching enough cases. At last, I was able to just isolate
+# the last names, which for the most part, worked. From there, I individually
+# ran over the data and saw that some entries were just mistyped into the MIT
+# data, but for the most part, most entries missing in the merge were just
+# because the FEC didn't have the data. Finally, I manually checked which names
+# were duplicated and manually removed some (i.e. two candidates having the same
+# last name in the same district -- although this was not that prevalent.) At
+# last, I have a data set I can now work with for the 2016 election.
+
 x16_joined_data <- mit_2016 %>%
   mutate(district = as.integer(district)) %>%
-  stringdist_left_join(x16_candidates, by = c("state_po" = "cand_office_st", "district" = "cand_office_district", "candidate_last" = "candidate_last"), ignore_case =TRUE, max_dist = 0) %>%
-  filter(!is.na(cand_name)) 
+  stringdist_left_join(fec_16,
+    by = c(
+      "state_po" = "cand_office_st",
+      "district" = "cand_office_district",
+      "candidate_last" = "candidate_last"
+    ),
+    ignore_case = TRUE,
+    max_dist = 0
+  ) %>%
+  filter(!is.na(cand_name)) %>%
+  select(-party.y, -candidate_last.y) %>%
+  mutate(party = party.x)
 x16_joined_data <- x16_joined_data[-c(282, 372, 624, 640), ]
+```
+
+
+```{r sexychart}
+raised_by_party <- x16_joined_data %>%
+  group_by(party) %>%
+  filter(party %in% c("republican", "democrat")) %>%
+  summarize(avg_individual = mean(ttl_indiv_contrib), avg_pac = mean(trans_from_auth)) %>%
+  gather(key = "metric", value = "spend", avg_individual:avg_pac)
+
+raised_by_party$party <- as.factor(raised_by_party$party)
+raised_by_party$metric <- as.factor(raised_by_party$metric)
+
+ggplot(raised_by_party, aes(x = party, y = spend, fill = metric)) + 
+  geom_col()
 ```

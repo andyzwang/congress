@@ -20,6 +20,7 @@ library(tm)
 library(janitor)
 library(fuzzyjoin)
 library(tidyverse)
+library(ggthemes)
 fml <- function(mangled_names) {
   titles <- c(
     "MASTER", "MR", "MISS", "MRS", "MS",
@@ -203,12 +204,31 @@ x16_joined_data <- x16_joined_data[-c(282, 372, 624, 640), ]
 raised_by_party <- x16_joined_data %>%
   group_by(party) %>%
   filter(party %in% c("republican", "democrat")) %>%
-  summarize(avg_individual = mean(ttl_indiv_contrib), avg_pac = mean(trans_from_auth)) %>%
-  gather(key = "metric", value = "spend", avg_individual:avg_pac)
+  summarize(
+    avg_individual = mean(ttl_indiv_contrib),
+    avg_pac = mean(trans_from_auth),
+    avg_spend = mean(ttl_receipts)
+  ) %>%
+  gather(key = "metric", value = "spend", avg_individual:avg_spend)
 
 raised_by_party$party <- as.factor(raised_by_party$party)
 raised_by_party$metric <- as.factor(raised_by_party$metric)
 
-ggplot(raised_by_party, aes(x = party, y = spend, fill = metric)) + 
-  geom_col()
+ggplot(raised_by_party, aes(x = metric, y = spend, fill = party)) +
+  geom_col(stat = "identity", position = position_dodge()) +
+  theme_classic() +
+  labs(
+    title = "Individual Candidate Financials",
+    subtitle = "Metrics computed from average of all candidates in party",
+    x = "Financial Metric",
+    y = "Dollar Amount",
+    fill = "Party"
+  ) +
+  scale_y_continuous(labels = scales::dollar) +
+  scale_x_discrete(labels = c(
+    "Individual Contributions",
+    "PAC Donations",
+    "Total Spending"
+  ))
+
 ```

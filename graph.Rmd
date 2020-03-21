@@ -188,7 +188,10 @@ raised_by_party <- x16_joined_data %>%
 raised_by_party$party <- as.factor(raised_by_party$party)
 raised_by_party$metric <- as.factor(raised_by_party$metric)
 
+
 ggplot(raised_by_party, aes(x = metric, y = spend, fill = party)) +
+  scale_fill_manual("party", 
+                    values = c("democrat" = "blue", "republican" = "red")) +
   geom_col(stat = "identity", position = position_dodge()) +
   theme_classic() +
   labs(

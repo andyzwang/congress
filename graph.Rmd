@@ -1,0 +1,208 @@
+```{r setup, include=FALSE}
+
+# some functions that I needed included the readr package, to read in the CSV,
+# tidyverse (as usual) for all of our tidying functions, tm for removing
+# punctuation, fuzzyjoin to be able to join without regards to case, and janitor
+# to clean up the column names. I also created the FML function (found online at
+# https://www.r-bloggers.com/split-intermixed-names-into-first-middle-and-last/),
+# which helped a lot to process the names.
+
+knitr::opts_chunk$set(echo = FALSE, include = FALSE)
+library(readr)
+library(tm)
+library(janitor)
+library(fuzzyjoin)
+library(tidyverse)
+library(ggthemes)
+fml <- function(mangled_names) {
+  titles <- c(
+    "MASTER", "MR", "MISS", "MRS", "MS",
+    "MX", "JR", "SR", "M", "SIR", "GENTLEMAN",
+    "SIRE", "MISTRESS", "MADAM", "DAME", "LORD",
+    "LADY", "ESQ", "EXCELLENCY", "EXCELLENCE",
+    "HER", "HIS", "HONOUR", "THE",
+    "HONOURABLE", "HONORABLE", "HON", "JUDGE", "II", "III"
+  )
+  mangled_names %>%
+    sapply(function(name) {
+      split <- str_split(name, " ") %>% unlist()
+      original_length <- length(split)
+      split <- split[which(!split %>%
+        toupper() %>%
+        str_replace_all("[^A-Z]", "")
+        %in% titles)]
+      case_when(
+        (length(split) < original_length) &
+          (length(split) == 1) ~ c(
+          NA,
+          NA,
+          split[1]
+        ),
+        length(split) == 1 ~ c(split[1], NA, NA),
+        length(split) == 2 ~ c(
+          split[1], NA,
+          split[2]
+        ),
+        length(split) == 3 ~ c(
+          split[1],
+          split[2],
+          split[3]
+        ),
+        length(split) > 3 ~ c(
+          split[1],
+          paste(split[2:(length(split) - 1)],
+            collapse = "-"
+          ),
+          split[length(split)]
+        )
+      )
+    }) %>%
+    t() %>%
+    return()
+}
+```
+```{r electiondata}
+
+# loading in the file downloaded from the internet
+
+load("house_elections.RData")
+
+# cleaning up the data to be used in our world
+
+mit_data <- x %>%
+  clean_names() %>%
+  filter(candidate != "NA") %>%
+  add_column("candidate_first" = NA) %>%
+  add_column("candidate_middle" = NA) %>%
+  add_column("candidate_last" = NA)
+
+# parsing the names to first, middle, last
+
+mit_data[
+  ,
+  c(
+    "candidate_first",
+    "candidate_middle",
+    "candidate_last"
+  )
+] <- mit_data$candidate %>% fml()
+mit_data$candidate_last <- removePunctuation(mit_data$candidate_last)
+
+# cleaning up the data -- removing blank votes, others, scatter, etc, as well as
+# some manual corrections for candidate names (this was extremely frustrating
+# when candidate names didn't turn out right!! and had no match!)
+
+mit_2016 <- mit_data %>%
+  filter(year == 2016) %>%
+  filter(candidate != "Blank Vote") %>%
+  filter(candidate != "Other") %>%
+  filter(candidate != "scatter") %>%
+  filter(candidate != "Scatter") %>%
+  filter(candidate != "Void Vote")
+mit_2016[9, "candidate_last"] <- "Putman"
+mit_2016[9, "candidate"] <- "David J. Putman"
+mit_2016[108, "candidate"] <- "Roger Hernandez"
+mit_2016[108, "candidate_last"] <- "Hernandez"
+mit_2016[119, "candidate"] <- "Linda T. Sanchez"
+mit_2016[119, "candidate_last"] <- "Sanchez"
+mit_2016[131, "candidate"] <- "Nanette Diaz Barragan"
+mit_2016[131, "candidate_last"] <- "Barragan"
+mit_2016[307, "candidate"] <- "Luis V. Gutierrez"
+mit_2016[307, "candidate_last"] <- "Gutierrez"
+```
+```{r fundraisingdata, message = FALSE}
+
+# reading in the file, using column names. then cleaning up (i.e. setting party
+# affiliation to full names for better compatibility with the other table,
+# setting names to title case instead of all caps, and then setting a column for
+# the last name)
+
+fec_16 <- read_delim("16_candidates.txt",
+  "|",
+  escape_double = FALSE, col_names = TRUE,
+  trim_ws = TRUE
+) %>%
+  mutate(CAND_OFFICE_DISTRICT = as.integer(CAND_OFFICE_DISTRICT)) %>%
+  clean_names() %>%
+  mutate(cand_name = str_to_title(cand_name)) %>%
+  filter(cand_pty_affiliation %in% c("DEM", "REP")) %>%
+  mutate(party = ifelse(cand_pty_affiliation == "DEM",
+    "democrat",
+    "republican"
+  )) %>%
+  select(-cand_pty_affiliation) %>%
+  select(
+    -spec_election, -prim_election,
+    -run_election, -gen_election, -gen_election_percent
+  ) %>%
+  mutate(cand_name = removePunctuation(cand_name)) %>%
+  mutate("candidate_last" = gsub("([A-Za-z]+).*", "\\1", cand_name))
+  
+```
+```{r joineddata}
+
+# Joining the data was honestly very difficult for me. I was able to figure out
+# how to set, for example, the districts equal to each other and the states
+# equal to each other at first. However, just joining by district, state, and
+# party would give me incorrect merging, since the FEC data also had primary
+# challengers, each of which would be merged into the general nominee's slot. I
+# then tried to merge by name, but the FEC data was in the format of Last, First
+# Middle, while the MIT data was in the form of First Middle Last Suffix. I
+# tried using fuzzy merging, but I couldn't strike a balance between being too
+# lenient and it not catching enough cases. At last, I was able to just isolate
+# the last names, which for the most part, worked. From there, I individually
+# ran over the data and saw that some entries were just mistyped into the MIT
+# data, but for the most part, most entries missing in the merge were just
+# because the FEC didn't have the data. Finally, I manually checked which names
+# were duplicated and manually removed some (i.e. two candidates having the same
+# last name in the same district -- although this was not that prevalent.) At
+# last, I have a data set I can now work with for the 2016 election.
+
+x16_joined_data <- mit_2016 %>%
+  mutate(district = as.integer(district)) %>%
+  stringdist_left_join(fec_16,
+    by = c(
+      "state_po" = "cand_office_st",
+      "district" = "cand_office_district",
+      "candidate_last" = "candidate_last"
+    ),
+    ignore_case = TRUE,
+    max_dist = 0
+  ) %>%
+  filter(!is.na(cand_name)) %>%
+  select(-party.y, -candidate_last.y) %>%
+  mutate(party = party.x)
+x16_joined_data <- x16_joined_data[-c(282, 372, 624, 640), ]
+```
+```{r sexychart, include = TRUE, warning = FALSE, message= FALSE}
+raised_by_party <- x16_joined_data %>%
+  group_by(party) %>%
+  filter(party %in% c("republican", "democrat")) %>%
+  summarize(
+    avg_individual = mean(ttl_indiv_contrib),
+    avg_pac = mean(trans_from_auth),
+    avg_spend = mean(ttl_receipts)
+  ) %>%
+  gather(key = "metric", value = "spend", avg_individual:avg_spend)
+
+raised_by_party$party <- as.factor(raised_by_party$party)
+raised_by_party$metric <- as.factor(raised_by_party$metric)
+
+ggplot(raised_by_party, aes(x = metric, y = spend, fill = party)) +
+  geom_col(stat = "identity", position = position_dodge()) +
+  theme_classic() +
+  labs(
+    title = "Individual Candidate Financials",
+    subtitle = "Metrics computed from average of all candidates in party",
+    x = "Financial Metric",
+    y = "Dollar Amount",
+    fill = "Party"
+  ) +
+  scale_y_continuous(labels = scales::dollar) +
+  scale_x_discrete(labels = c(
+    "Individual Contributions",
+    "PAC Donations",
+    "Total Spending"
+  ))
+
+```
